@@ -10,7 +10,7 @@
       <TargetName>BootLoader_UDisk</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060750::V5.06 update 6 (build 750)::ARMCC</pCCUsed>
+      <pCCUsed>5060750::V5.06 update 6 (build 750)::.\ARMCC</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -185,6 +185,7 @@
             <uocXRam>0</uocXRam>
             <RvdsVP>0</RvdsVP>
             <RvdsMve>0</RvdsMve>
+            <RvdsCdeCp>0</RvdsCdeCp>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -312,7 +313,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>3</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -351,7 +352,7 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
+            <ClangAsOpt>4</ClangAsOpt>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -379,6 +380,76 @@
         </TargetArmAds>
       </TargetOption>
       <Groups>
+        <Group>
+          <GroupName>Doc</GroupName>
+          <Files>
+            <File>
+              <FileName>readme.txt</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\readme.txt</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>User</GroupName>
+          <Files>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>delay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\delay.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usart.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_desc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usb_desc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_hw.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usb_hw.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_prop.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usb_prop.c</FilePath>
+            </File>
+            <File>
+              <FileName>memory.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\memory.c</FilePath>
+            </File>
+            <File>
+              <FileName>scsi_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\scsi_data.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_bot.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usb_bot.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_scsi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usb_scsi.c</FilePath>
+            </File>
+          </Files>
+        </Group>
         <Group>
           <GroupName>USB-FS-Device_Driver</GroupName>
           <Files>
@@ -436,66 +507,6 @@
               <FileName>ffunicode.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\FATFS\ffunicode.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>User</GroupName>
-          <Files>
-            <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\main.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb_desc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usb_desc.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb_hw.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usb_hw.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb_prop.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usb_prop.c</FilePath>
-            </File>
-            <File>
-              <FileName>memory.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\memory.c</FilePath>
-            </File>
-            <File>
-              <FileName>scsi_data.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\scsi_data.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb_bot.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usb_bot.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb_scsi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usb_scsi.c</FilePath>
-            </File>
-            <File>
-              <FileName>flash.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\flash.c</FilePath>
-            </File>
-            <File>
-              <FileName>usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usart.c</FilePath>
-            </File>
-            <File>
-              <FileName>delay.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\delay.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -590,5 +601,20 @@
       </file>
     </files>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>&lt;Project Info&gt;</LayName>
+        <LayDesc></LayDesc>
+        <LayUrl></LayUrl>
+        <LayKeys></LayKeys>
+        <LayCat></LayCat>
+        <LayLic></LayLic>
+        <LayTarg>0</LayTarg>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>

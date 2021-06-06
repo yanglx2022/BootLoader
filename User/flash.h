@@ -14,7 +14,7 @@
 
 // 用户区设置(非代码区域)
 #define USER_SECTOR_COUNT			35
-#define USER_FLASH_BASE				0X08007400		// 起始地址, 根据USER_SECTOR_COUNT设置
+#define USER_FLASH_BASE				(0x08000000 + (FLASH_SIZE - USER_SECTOR_COUNT) * 1024)		// 起始地址
 
 
 // 从指定地址开始读数据

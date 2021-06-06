@@ -15,15 +15,16 @@
 #include "delay.h"
 
 // 升级引脚
-#define GPIO_UPDATE				GPIOB
-#define GPIO_PIN_UPDATE		GPIO_Pin_0
+#define GPIO_UPDATE				GPIOA
+#define GPIO_PIN_UPDATE		GPIO_Pin_2
 
 // 升级指示灯
 #define GPIO_LED					GPIOA
-#define GPIO_PIN_LED			GPIO_Pin_4
+#define GPIO_PIN_LED1			GPIO_Pin_0
+#define GPIO_PIN_LED2			GPIO_Pin_1
 
 // 应用程序地址
-#define APPLICATION_ADDRESS		0x08004800
+#define APPLICATION_ADDRESS		0x08004400
 
 // U盘只读状态(拷贝升级文件时丢弃所有写操作防止主机修改文件)
 extern uint8_t udisk_read_only;
@@ -34,27 +35,132 @@ FIL file;
 
 // 固件缓存
 uint8_t firmware[FLASH_SECTOR_SIZE];
+// 固件名称
+const char* firmware_filename = "GamepadReceiver.bin";
 
 uint8_t delay_cnt = 0;
 
+void Led_Init(void);
+uint8_t IsUpdate(void);
+void Jump_to_Application(void);
+
+int main(void)
+{
+	#ifdef DEBUG
+	Debug_Init();
+	printf("Bootloader init\n");
+	#endif
+	
+	Delay_Init();
+	Led_Init();
+	
+	if (IsUpdate()) // 升级键按下
+	{
+		// 升级U盘模式
+		USB_HW_Init();
+		USB_Init();
+		#ifdef DEBUG
+		printf("usb wait\n");
+		#endif
+		while (bDeviceState != CONFIGURED)
+		{
+			// U盘挂载过程两LED同时闪烁
+			GPIO_SetBits(GPIO_LED, GPIO_PIN_LED1 | GPIO_PIN_LED2);
+			delay_ms(100);
+			GPIO_ResetBits(GPIO_LED, GPIO_PIN_LED1 | GPIO_PIN_LED2); // U盘升级模式两LED都亮
+			delay_ms(100);
+		}
+		#ifdef DEBUG
+		printf("usb ok\n");
+		#endif
+		
+		// 查询固件拷贝
+		while(1)
+		{
+			delay_ms(100);
+			delay_cnt++;
+			if (delay_cnt % 10 == 0)	// 每1s查询一次
+			{
+				delay_cnt = 0;
+				f_mount(&fs, "", 1);
+				FRESULT fr = f_open(&file, firmware_filename, FA_READ);
+				if (fr == FR_OK)
+				{
+					delay_ms(500);
+					udisk_read_only = 1;
+					uint32_t length = f_size(&file);
+					if (length % 2 > 0)
+					{
+						length++;
+					}
+					uint32_t bytes_read;
+					uint32_t bytes_to_write = length;
+					uint32_t address = APPLICATION_ADDRESS;
+					while(length > 0)
+					{
+						if (bytes_to_write >= FLASH_SECTOR_SIZE)
+						{
+							bytes_to_write = FLASH_SECTOR_SIZE;
+						}
+						f_read(&file, firmware, bytes_to_write, &bytes_read);
+						#ifdef DEBUG
+						printf("bytes_to_write = %d, bytes_read = %d\n", bytes_to_write, bytes_read);
+						#endif
+						Flash_Write(address, firmware, bytes_to_write);
+						length -= bytes_to_write;
+						address += bytes_to_write;
+						bytes_to_write = length;
+						// LED流水闪烁
+						if (GPIO_ReadOutputData(GPIO_LED) & GPIO_PIN_LED1)
+						{
+							GPIO_ResetBits(GPIO_LED, GPIO_PIN_LED1);
+							GPIO_SetBits(GPIO_LED, GPIO_PIN_LED2);
+						}
+						else
+						{
+							GPIO_SetBits(GPIO_LED, GPIO_PIN_LED1);
+							GPIO_ResetBits(GPIO_LED, GPIO_PIN_LED2);
+						}
+					}
+					f_close(&file);
+					f_unlink(firmware_filename);
+					f_mount(0, "", 1);
+					udisk_read_only = 0;
+					break;
+				}
+				f_mount(0, "", 1);
+			}
+		}
+		GPIO_SetBits(GPIO_LED, GPIO_PIN_LED1 | GPIO_PIN_LED2);
+	}
+	#ifdef DEBUG
+	printf("ready to jump\n");
+	#endif
+	USB_Connect(FALSE);
+	Jump_to_Application();
+	
+  while(1);
+}
+
 // 升级指示LED初始化
-void Led_Init()
+void Led_Init(void)
 {
 	// 使能时钟
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	// 设置引脚
   GPIO_InitTypeDef  GPIO_InitStructure;  
-	GPIO_InitStructure.GPIO_Pin = GPIO_PIN_LED;
+	GPIO_InitStructure.GPIO_Pin = GPIO_PIN_LED1 | GPIO_PIN_LED2;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
   GPIO_Init(GPIO_LED, &GPIO_InitStructure);
+	GPIO_ResetBits(GPIO_LED, GPIO_PIN_LED1 | GPIO_PIN_LED2);	// 点亮
 }
 
 // 判断是否启动升级
-uint8_t IsUpdate()
+uint8_t IsUpdate(void)
 {
 	// 使能GPIO时钟
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	// 设置引脚
   GPIO_InitTypeDef  GPIO_InitStructure;  
 	GPIO_InitStructure.GPIO_Pin = GPIO_PIN_UPDATE;
@@ -64,10 +170,10 @@ uint8_t IsUpdate()
 	// 判断引脚状态
 	if (GPIO_ReadInputDataBit(GPIO_UPDATE, GPIO_PIN_UPDATE) == 0)
 	{
-		Delay_Ms(100);
+		delay_ms(100);
 		if (GPIO_ReadInputDataBit(GPIO_UPDATE, GPIO_PIN_UPDATE) == 0)
 		{
-			Delay_Ms(100);
+			delay_ms(100);
 			if (GPIO_ReadInputDataBit(GPIO_UPDATE, GPIO_PIN_UPDATE) == 0)
 			{
 				return 1;		// 升级键按下需要升级
@@ -100,91 +206,5 @@ void Jump_to_Application(void)
 	}
 }
 
-int main(void)
-{
-	#ifdef DEBUG
-	Debug_Init();
-	printf("Bootloader init\n");
-	#endif
-	
-	Delay_Init();
-	
-	if (IsUpdate()) // 升级键按下
-	{
-		// 升级U盘模式
-		USB_HW_Init();
-		USB_Init();
-		#ifdef DEBUG
-		printf("usb wait\n");
-		#endif
-		while (bDeviceState != CONFIGURED);
-		#ifdef DEBUG
-		printf("usb ok\n");
-		#endif
-		Led_Init();
-		
-		// 查询固件拷贝
-		while(1)
-		{
-			Delay_Ms(100);
-			delay_cnt++;
-			if (delay_cnt % 10 == 0)	// 每1s查询一次
-			{
-				delay_cnt = 0;
-				f_mount(&fs, "", 1);
-				FRESULT fr = f_open(&file, "Keyboard.bin", FA_READ);
-				if (fr == FR_OK)
-				{
-					udisk_read_only = 1;
-					uint32_t length = f_size(&file);
-					if (length % 2 > 0)
-					{
-						length++;
-					}
-					uint32_t bytes_read;
-					uint32_t bytes_to_write = length;
-					uint32_t address = APPLICATION_ADDRESS;
-					while(length > 0)
-					{
-						if (bytes_to_write >= FLASH_SECTOR_SIZE)
-						{
-							bytes_to_write = FLASH_SECTOR_SIZE;
-						}
-						f_read(&file, firmware, bytes_to_write, &bytes_read);
-						#ifdef DEBUG
-						printf("bytes_to_write = %d, bytes_read = %d\n", bytes_to_write, bytes_read);
-						#endif
-						Flash_Write(address, firmware, bytes_to_write);
-						length -= bytes_to_write;
-						address += bytes_to_write;
-						bytes_to_write = length;
-					}
-					f_close(&file);
-					f_unlink("Keyboard.bin");
-					f_mount(0, "", 1);
-					udisk_read_only = 0;
-					break;
-				}
-				f_mount(0, "", 1);
-			}
-			// LED闪烁
-			if (delay_cnt % 2 == 0)
-			{
-				GPIO_SetBits(GPIO_LED, GPIO_PIN_LED);
-			}
-			else
-			{
-				GPIO_ResetBits(GPIO_LED, GPIO_PIN_LED);
-			}
-		}
-		GPIO_ResetBits(GPIO_LED, GPIO_PIN_LED);
-	}
-	#ifdef DEBUG
-	printf("ready to jump\n");
-	#endif
-	USB_Connect(FALSE);
-	Jump_to_Application();
-	
-  while(1);
-}
+
 
